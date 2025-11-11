@@ -1,0 +1,134 @@
+version: '3.8'
+
+networks:
+  web_network:
+    external: true
+  services_network:
+    driver: bridge
+
+volumes:
+  flowise_data:
+  n8n_data:
+  postgres_data:
+  qdrant_data:
+
+services:
+  # Flowise Service
+  flowise:
+    image: flowiseai/flowise:latest
+    container_name: flowise
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+      - DATABASE_PATH=/root/.flowise
+      - APIKEY_PATH=/root/.flowise
+      - SECRETKEY_OVERWRITE=${FLOWISE_SECRET_KEY}
+      - FLOWISE_USERNAME=${FLOWISE_USERNAME}
+      - FLOWISE_PASSWORD=${FLOWISE_PASSWORD}
+      - DEBUG=false
+      - EXECUTION_MODE=main
+    volumes:
+      - flowise_data:/root/.flowise
+    networks:
+      - web_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.flowise.rule=Host(`${FLOWISE_DOMAIN}`)"
+      - "traefik.http.routers.flowise.entrypoints=websecure"
+      - "traefik.http.routers.flowise.tls.certresolver=letsencrypt"
+      - "traefik.http.services.flowise.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.flowise.headers.stsseconds=31536000"
+      - "traefik.http.middlewares.flowise.headers.stsincludesubdomains=true"
+      - "traefik.http.middlewares.flowise.headers.stspreload=true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL for n8n
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres-n8n
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - services_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Qdrant for n8n
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-n8n
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - services_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # n8n Service
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_USER_MANAGEMENT_JWT_SECRET=${N8N_USER_MANAGEMENT_JWT_SECRET}
+      - N8N_HOST=https://${N8N_DOMAIN}
+      - WEBHOOK_URL=https://${N8N_DOMAIN}/
+      - N8N_LOG_LEVEL=info
+      - N8N_LOG_OUTPUT=file
+      - N8N_LOG_FILE_LOCATION=/home/node/.n8n/logs/n8n.log
+      - N8N_LOG_FILE_MAX_SIZE=10485760
+      - N8N_LOG_FILE_MAX_FILES=10
+      - N8N_DIAGNOSTICS_ENABLED=true
+      - N8N_PERSONALIZATION_ENABLED=true
+      - N8N_TEMPLATES_ENABLED=true
+      - N8N_EXECUTIONS_PROCESS=main
+      - TZ=America/Lima
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - web_network
+      - services_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n.rule=Host(`${N8N_DOMAIN}`)"
+      - "traefik.http.routers.n8n.entrypoints=websecure"
+      - "traefik.http.routers.n8n.tls.certresolver=letsencrypt"
+      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+      - "traefik.http.middlewares.n8n.headers.stsseconds=31536000"
+      - "traefik.http.middlewares.n8n.headers.stsincludesubdomains=true"
+      - "traefik.http.middlewares.n8n.headers.stspreload=true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
