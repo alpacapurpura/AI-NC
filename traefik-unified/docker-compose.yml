@@ -43,11 +43,6 @@ services:
       - "traefik.http.middlewares.flowise.headers.stsincludesubdomains=true"
       - "traefik.http.middlewares.flowise.headers.stspreload=true"
       - "traefik.http.routers.flowise.middlewares=flowise"
-      # HTTP router to redirect to HTTPS
-      - "traefik.http.routers.flowise-web.rule=Host(`${FLOWISE_DOMAIN}`)"
-      - "traefik.http.routers.flowise-web.entrypoints=web"
-      - "traefik.http.routers.flowise-web.middlewares=redirect-to-https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/"]
       interval: 30s
@@ -124,11 +119,6 @@ services:
       - "traefik.http.middlewares.n8n.headers.stsincludesubdomains=true"
       - "traefik.http.middlewares.n8n.headers.stspreload=true"
       - "traefik.http.routers.n8n.middlewares=n8n"
-      # HTTP router to redirect to HTTPS
-      - "traefik.http.routers.n8n-web.rule=Host(`${N8N_DOMAIN}`)"
-      - "traefik.http.routers.n8n-web.entrypoints=web"
-      - "traefik.http.routers.n8n-web.middlewares=redirect-to-https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
       interval: 30s
