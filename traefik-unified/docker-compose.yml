@@ -33,6 +33,7 @@ services:
       - web_network
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=web_gateway"
       - "traefik.http.routers.flowise.rule=Host(`${FLOWISE_DOMAIN}`)"
       - "traefik.http.routers.flowise.entrypoints=websecure"
       - "traefik.http.routers.flowise.tls.certresolver=letsencrypt"
@@ -119,6 +120,7 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=web_gateway"
       - "traefik.http.routers.n8n.rule=Host(`${N8N_DOMAIN}`)"
       - "traefik.http.routers.n8n.entrypoints=websecure"
       - "traefik.http.routers.n8n.tls.certresolver=letsencrypt"
