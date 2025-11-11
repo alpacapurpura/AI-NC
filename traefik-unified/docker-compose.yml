@@ -34,15 +34,23 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web_gateway"
+      # HTTPS router
       - "traefik.http.routers.flowise.rule=Host(`${FLOWISE_DOMAIN}`)"
       - "traefik.http.routers.flowise.entrypoints=websecure"
       - "traefik.http.routers.flowise.tls.certresolver=letsencrypt"
       - "traefik.http.services.flowise.loadbalancer.server.port=3000"
+      # Security headers middleware (HSTS)
       - "traefik.http.middlewares.flowise.headers.stsseconds=31536000"
       - "traefik.http.middlewares.flowise.headers.stsincludesubdomains=true"
       - "traefik.http.middlewares.flowise.headers.stspreload=true"
+      - "traefik.http.routers.flowise.middlewares=flowise"
+      # HTTP router to redirect to HTTPS
+      - "traefik.http.routers.flowise-web.rule=Host(`${FLOWISE_DOMAIN}`)"
+      - "traefik.http.routers.flowise-web.entrypoints=web"
+      - "traefik.http.routers.flowise-web.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -121,13 +129,21 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web_gateway"
+      # HTTPS router
       - "traefik.http.routers.n8n.rule=Host(`${N8N_DOMAIN}`)"
       - "traefik.http.routers.n8n.entrypoints=websecure"
       - "traefik.http.routers.n8n.tls.certresolver=letsencrypt"
       - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+      # Security headers middleware (HSTS)
       - "traefik.http.middlewares.n8n.headers.stsseconds=31536000"
       - "traefik.http.middlewares.n8n.headers.stsincludesubdomains=true"
       - "traefik.http.middlewares.n8n.headers.stspreload=true"
+      - "traefik.http.routers.n8n.middlewares=n8n"
+      # HTTP router to redirect to HTTPS
+      - "traefik.http.routers.n8n-web.rule=Host(`${N8N_DOMAIN}`)"
+      - "traefik.http.routers.n8n-web.entrypoints=web"
+      - "traefik.http.routers.n8n-web.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
       interval: 30s
