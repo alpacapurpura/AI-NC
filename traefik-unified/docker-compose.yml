@@ -1,7 +1,7 @@
 version: '3.8'
 
 networks:
-  web_network:
+  web_gateway:
     external: true
   services_network:
     driver: bridge
@@ -30,7 +30,7 @@ services:
     volumes:
       - flowise_data:/root/.flowise
     networks:
-      - web_network
+      - web_gateway
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web_gateway"
@@ -111,7 +111,7 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
     networks:
-      - web_network
+      - web_gateway
       - services_network
     depends_on:
       postgres:
