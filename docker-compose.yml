@@ -45,7 +45,7 @@ services:
       - "traefik.http.middlewares.flowise.headers.stspreload=true"
       - "traefik.http.routers.flowise.middlewares=flowise"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:3000/" ]
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:3000/" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -124,7 +124,7 @@ services:
       - "traefik.http.middlewares.n8n.headers.stspreload=true"
       - "traefik.http.routers.n8n.middlewares=n8n"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:5678/healthz" ]
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:5678/healthz" ]
       interval: 30s
       timeout: 10s
       retries: 3
