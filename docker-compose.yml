@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   web_gateway:
     external: true
@@ -11,9 +9,12 @@ volumes:
   n8n_data:
   postgres_data:
 
+
 services:
   # Flowise Service
   flowise:
+    profiles:
+      - flowise
     image: flowiseai/flowise:latest
     container_name: flowise
     restart: unless-stopped
@@ -44,7 +45,7 @@ services:
       - "traefik.http.middlewares.flowise.headers.stspreload=true"
       - "traefik.http.routers.flowise.middlewares=flowise"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -52,6 +53,8 @@ services:
 
   # PostgreSQL for n8n
   postgres:
+    profiles:
+      - n8n
     image: postgres:16-alpine
     container_name: postgres-n8n
     restart: unless-stopped
@@ -64,14 +67,15 @@ services:
     networks:
       - services_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: [ "CMD-SHELL", "pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 5s
       timeout: 5s
       retries: 10
 
-
   # n8n Service
   n8n:
+    profiles:
+      - n8n
     image: n8nio/n8n:latest
     container_name: n8n
     restart: unless-stopped
@@ -120,7 +124,7 @@ services:
       - "traefik.http.middlewares.n8n.headers.stspreload=true"
       - "traefik.http.routers.n8n.middlewares=n8n"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+      test: [ "CMD", "curl", "-f", "http://localhost:5678/healthz" ]
       interval: 30s
       timeout: 10s
       retries: 3
