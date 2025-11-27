@@ -1,0 +1,11 @@
+# Directorios de Datos - No versionar
+
+# Datos persistentes de servicios
+data/
+backups/
+
+# Archivos de respaldo
+*.tar.gz
+
+# Logs
+*.log
