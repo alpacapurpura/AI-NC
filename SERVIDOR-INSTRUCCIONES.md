@@ -32,8 +32,21 @@ docker compose --profile flowise --profile n8n down
 
 ```bash
 mkdir -p ./data/{flowise,n8n,postgres}
-chmod -R 775 ./data
 ```
+
+### 3B️⃣ Configurar Permisos (IMPORTANTE)
+
+```bash
+# Ajustar permisos para que los contenedores puedan escribir
+sudo chown -R 1000:1000 ./data/n8n      # n8n usa UID 1000
+sudo chown -R 1000:1000 ./data/flowise  # Flowise usa UID 1000
+sudo chown -R 999:999 ./data/postgres   # PostgreSQL usa UID 999
+
+# Alternativa si no tienes sudo (menos seguro):
+# chmod -R 777 ./data
+```
+
+> ⚠️ **Crucial**: Sin estos permisos, n8n fallará con error `EACCES: permission denied, mkdir '/home/node/.n8n/logs'`
 
 ### 4️⃣ Levantar Servicios
 
@@ -93,6 +106,27 @@ docker compose --profile flowise --profile n8n up -d  # Aplicar
 
 ## 🆘 Si Algo Sale Mal
 
+### Error: `EACCES: permission denied, mkdir '/home/node/.n8n/logs'`
+
+**Causa**: Los directorios en `./data/` no tienen los permisos correctos para los contenedores.
+
+**Solución**:
+```bash
+# Detener el servicio afectado
+docker compose stop n8n
+
+# Ajustar permisos
+sudo chown -R 1000:1000 ./data/n8n
+
+# Reiniciar
+docker compose up -d n8n
+
+# Verificar logs
+docker compose logs -f n8n
+```
+
+### Otros Problemas Comunes
+
 ```bash
 # Ver logs detallados
 docker compose logs -f
@@ -103,6 +137,9 @@ docker compose restart n8n
 # Recrear todo (datos permanecen seguros)
 docker compose down
 docker compose up -d --force-recreate
+
+# Verificar permisos de todos los directorios
+ls -lah ./data/*/
 ```
 
 ---

@@ -75,7 +75,7 @@ services:
   n8n:
     profiles:
       - n8n
-    image: n8nio/n8n:latest
+    build: .
     container_name: n8n
     restart: unless-stopped
     environment:
@@ -128,3 +128,34 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: unless-stopped
+    environment:
+      # Habilitar autenticación mediante API Key
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    networks:
+      - web_gateway
+      - services_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web_gateway"
+      # Router HTTPS
+      - "traefik.http.routers.qdrant.rule=Host(`${QDRANT_DOMAIN}`)"
+      - "traefik.http.routers.qdrant.entrypoints=websecure"
+      - "traefik.http.routers.qdrant.tls.certresolver=letsencrypt"
+      - "traefik.http.services.qdrant.loadbalancer.server.port=6333"
+      # Security headers (Igual que tus otros servicios)
+      - "traefik.http.middlewares.qdrant.headers.stsseconds=31536000"
+      - "traefik.http.middlewares.qdrant.headers.stsincludesubdomains=true"
+      - "traefik.http.routers.qdrant.middlewares=qdrant"
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -c '</dev/tcp/localhost/6333'" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
